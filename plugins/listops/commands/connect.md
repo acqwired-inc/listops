@@ -20,7 +20,7 @@ Do this:
    `python ${CLAUDE_PLUGIN_ROOT}/scripts/connect.py set --key <the key>`.
    This validates the format, stores the key in user-scope `~/.claude/settings.json`,
    then **downloads the key-gated ListOps skill pack** (skills, the build/plan/list/
-   enrich/filter/thesis/qa/export/contacts/status commands, the qa-judge agent) and
+   enrich/filter/thesis/qa/export/status commands, the qa-judge agent) and
    writes it under the Claude config dir. An invalid key is rejected by the server
    (401) and nothing is installed.
 

@@ -11,7 +11,7 @@
     {
       "name": "listops",
       "source": "./plugins/listops",
-      "description": "Investment-grade company list building: MECE source planning, parallel gathering, DRA enrichment, thesis scoring, down-selection, QA judging, and contact enrichment."
+      "description": "Investment-grade company list building: MECE source planning, parallel gathering, DRA enrichment, thesis scoring, down-selection, and QA judging."
     }
   ]
 }

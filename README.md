@@ -2,7 +2,7 @@
 
 Investment-grade company list building, in Claude Code. Turn a one-line ask —
 *"commercial landscaping companies in Texas, owner-operated, >$5M, no PE"* — into
-a screened, enriched, thesis-ranked, contact-complete list, powered by the
+a screened, enriched, thesis-ranked list, powered by the
 Acqwired **Deep Research API (DRA)**.
 
 ## Install

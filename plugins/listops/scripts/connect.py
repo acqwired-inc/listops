@@ -231,7 +231,7 @@ def cmd_clear(args):
         cfg = config_dir()
         removed = 0
         for rel in ("commands/listops", "skills/list-building", "skills/list-operations",
-                    "skills/contact-waterfall", "agents/qa-judge.md", VERSION_FILE):
+                    "agents/qa-judge.md", VERSION_FILE):
             target = cfg / rel
             try:
                 if target.is_dir():

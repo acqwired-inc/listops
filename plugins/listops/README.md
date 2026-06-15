@@ -3,7 +3,7 @@
 Investment-grade company list building for Claude Code, powered by the Acqwired
 DRA platform. Turn a one-line request — *"commercial landscape maintenance
 companies within 90 miles of these addresses, owner-operated, >$5M, no PE"* —
-into a screened, enriched, thesis-ranked, contact-complete export.
+into a screened, enriched, thesis-ranked export.
 
 **Discovery runs through the DRA `submit_company_list` API, never through Claude
 web search.** Live sources in v1 are **Google Maps** (POI) and **Exa** (neural);
@@ -68,7 +68,6 @@ precedence over settings.json — then `connect.py update` fetches the pack.)*
 | `/listops:list` | LIST + INTAKE via the DRA API |
 | `/listops:enrich` | Tiered enrich→filter loop |
 | `/listops:filter` | Standalone re-filter (no new spend) |
-| `/listops:contacts` | Contact waterfall (verified emails/phones) |
 | `/listops:thesis` | Thesis scoring + ranking |
 | `/listops:qa` | Independent QA |
 | `/listops:export` | Gap-fill + final deliverable |
@@ -84,12 +83,10 @@ The marketplace package contains only the bootstrap (`.mcp.json`, the `connect`/
 to valid keys and installed under `~/.claude/` — it is **not** in this repo:
 
 - **Skills**: `list-building` (the planner — candidate acquisition planning,
-  enrichment waterfall & down-selection planning, QA planning),
+  enrichment waterfall & down-selection planning, QA planning) and
   `list-operations` (the operator — runs the list/research APIs, combines
   sources + dedupes, creates schemas, executes spend responsibly, performs
-  scoring/sorting/down-selection), and `contact-waterfall` (verified
-  emails/phones via provider waterfalls — stop-loss, email verification,
-  compliance flags; server-side method specced for the backend)
+  scoring/sorting/down-selection)
 - **Agent**: `qa-judge` (independent verification)
 - **Scripts**: `session.py` (atomic session tracking), `intake_screen.py`
   (blocklist + dedupe screening), `dedupe.py`, `dra_client.py` (resumable
