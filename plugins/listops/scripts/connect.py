@@ -169,6 +169,16 @@ def install_pack(key):
         content = f["content"].replace(PLACEHOLDER, skills_base)
         write_text_atomic(cfg / f["path"], content)
     write_text_atomic(cfg / VERSION_FILE, version)
+    # The curated PE blocklist moved server-side (applied at discovery) and no
+    # longer ships in the pack — remove the legacy local copy if an older
+    # install left one behind.
+    legacy = cfg / "skills" / "list-operations" / "assets" / "pe-platforms.txt"
+    if legacy.exists() and not any(f["path"] == "skills/list-operations/assets/pe-platforms.txt" for f in files):
+        try:
+            legacy.unlink()
+            print("Removed legacy local PE blocklist (now applied server-side at discovery).")
+        except OSError:
+            pass
     print(f"Installed {len(files)} ListOps files (pack {version}) under {cfg}")
 
 
@@ -218,6 +228,20 @@ def cmd_update(args):
     print("Update complete. Restart Claude Code if commands or the agent changed (skills hot-reload).")
 
 
+def server_pack_version(key):
+    """Fetch the current pack version from the API; None if unreachable."""
+    base = mcp_base_url()
+    if not base or not key:
+        return None
+    req = urllib.request.Request(f"{base}/listops/version")
+    req.add_header("Authorization", f"Bearer {key}")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read().decode()).get("version")
+    except Exception:
+        return None
+
+
 def cmd_check(args):
     path = settings_path()
     env = load_settings(path).get("env")
@@ -226,7 +250,13 @@ def cmd_check(args):
     print(f"shell env:     {ENV_VAR}={mask(in_shell)}  (takes precedence)" if in_shell else f"shell env:     {ENV_VAR} not set")
     print(f"settings.json: {ENV_VAR}={mask(in_settings)}  ({path})" if in_settings else f"settings.json: {ENV_VAR} not set  ({path})")
     vf = config_dir() / VERSION_FILE
-    print(f"skill pack:    {vf.read_text(encoding='utf-8').strip()} installed" if vf.exists() else "skill pack:    not installed (run /listops:connect)")
+    installed = vf.read_text(encoding="utf-8").strip() if vf.exists() else None
+    print(f"skill pack:    {installed} installed" if installed else "skill pack:    not installed (run /listops:connect)")
+    latest = server_pack_version(in_shell or in_settings)
+    if latest and installed and latest != installed:
+        print(f"               OUTDATED — server has {latest}. Run /listops:update.")
+    elif latest and installed:
+        print("               up to date")
     if not in_shell and not in_settings:
         print("\nNot connected. Run: /listops:connect <your dra_ key>")
         sys.exit(2)

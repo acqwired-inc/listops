@@ -1,9 +1,9 @@
-# ListOps — Acqwired DRA plugin for Claude Code & Claude Desktop
+# ListOps — Acqwired plugin for Claude Code & Claude Desktop
 
 Investment-grade company list building. Turn a one-line ask —
 *"commercial landscaping companies in Texas, owner-operated, >$5M, no PE"* — into
 a screened, enriched, thesis-ranked list, powered by the
-Acqwired **Deep Research API (DRA)**.
+**Acqwired Research API** (DRA — your API key starts with `dra_`).
 
 ## Install — Claude Desktop
 
@@ -24,7 +24,7 @@ Acqwired **Deep Research API (DRA)**.
 /plugin marketplace add acqwired-inc/listops-mcp-server
 # 2. install the plugin
 /plugin install listops@acqwired
-# 3. connect with your DRA API key
+# 3. connect with your Acqwired API key (starts with dra_)
 /listops:connect dra_your_key_here
 # 4. restart Claude Code, then:
 /listops:status
@@ -54,13 +54,15 @@ install plugin → /listops:connect <key> → pack downloads (key-gated) → res
 
 | Command | Stage |
 |---|---|
-| `/listops:build <thesis>` | Full pipeline: plan → list → screen → enrich → filter → thesis → QA → export |
+| `/listops:build <thesis>` | Full pipeline: plan → list → screen → enrich (piloted + reviewed) → filter → thesis → QA → verified export |
 | `/listops:list` | Multi-source discovery (Google Maps + Exa) → dedupe → intake screen |
-| `/listops:enrich` · `/listops:filter` | Tiered enrich→filter waterfalls |
+| `/listops:enrich` · `/listops:filter` | Tiered enrich→filter waterfalls with a required pilot review gate |
 | `/listops:thesis` | `completeCompanyProfile` + thesis fit scoring |
 | `/listops:qa` | Independent QA (ownership re-verification, coverage probes) |
-| `/listops:export` | Gap-fill + final deliverable |
-| `/listops:status` | Session funnel, gates, credits |
+| `/listops:export` | Gap-fill + deterministic basics verification + final deliverable |
+| `/listops:conflict-check` | Hand finalists to your internal conflict process |
+| `/listops:contacts` | Opt-in leadership contacts, cleared companies only |
+| `/listops:status` | Session funnel, gates, credits + update nudge |
 
 Plain language works too — *"find founder-owned HVAC companies near Tampa"* — the
 `list-building` skill triggers on intent.
@@ -68,7 +70,7 @@ Plain language works too — *"find founder-owned HVAC companies near Tampa"* �
 ## Requirements
 
 - Claude Code
-- A DRA API key (`dra_…`) from the [Acqwired dashboard](https://acqwired.com)
+- An Acqwired API key (`dra_…`) from the [Acqwired dashboard](https://acqwired.com)
 - Python 3.8+ on PATH (the bootstrap script is stdlib-only)
 
 ## Support
