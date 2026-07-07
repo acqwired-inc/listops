@@ -2,7 +2,14 @@
   "mcpServers": {
     "dra-research": {
       "type": "http",
-      "url": "https://api.acqwired.com/v1/mcp"
+      "url": "https://api.acqwired.com/v1/mcp",
+      "oauth": {
+        "clientName": "Acqwired ListOps",
+        "authorizationUrl": "https://api.acqwired.com/v1/authorize",
+        "tokenUrl": "https://api.acqwired.com/v1/token",
+        "registrationUrl": "https://api.acqwired.com/v1/register",
+        "scopes": ["mcp"]
+      }
     }
   }
 }
