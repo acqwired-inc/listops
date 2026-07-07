@@ -4,14 +4,14 @@
     "name": "Acqwired"
   },
   "metadata": {
-    "description": "Acqwired deal-sourcing and research tools for Claude Code",
-    "version": "0.1.1"
+    "description": "Acqwired deal-sourcing and research tools for Claude Code & Claude Desktop",
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "listops",
       "source": "./plugins/listops",
-      "description": "Investment-grade company list building: MECE source planning, parallel gathering, DRA enrichment, thesis scoring, down-selection, and QA judging."
+      "description": "Investment-grade company list building on the Acqwired Research API: buyer-context planning, multi-source discovery, piloted human-reviewed enrichment, thesis scoring, independent QA, and deterministically verified exports."
     }
   ]
 }

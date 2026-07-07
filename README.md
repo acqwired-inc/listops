@@ -69,9 +69,9 @@ Plain language works too — *"find founder-owned HVAC companies near Tampa"* �
 
 ## Requirements
 
-- Claude Code
+- Claude Code (CLI) or Claude Desktop
 - An Acqwired API key (`dra_…`) from the [Acqwired dashboard](https://acqwired.com)
-- Python 3.8+ on PATH (the bootstrap script is stdlib-only)
+- Python 3.8+ on PATH for the Claude Code path (the bootstrap script is stdlib-only)
 
 ## Support
 

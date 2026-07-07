@@ -104,5 +104,16 @@ to valid keys and installed under `~/.claude/` — it is **not** in this repo:
 The curated PE/franchise blocklist is applied **server-side at discovery** and
 no longer ships to client machines; projects keep a local `blocklist-extra.txt`
 for org-specific additions.
-- The `list_companies` API spec for the backend team: `docs/list-method-design.md`
-  at the marketplace repo root.
+
+## Operating principles
+
+- **Human in the loop before money moves.** Every enrichment tier is
+  credit-gated; tier 1 pilots on a 50-100 sample and the full pool never
+  commits without a reviewed, recorded gate. The pipeline never pulls
+  contacts, runs profiles, or expands scope unprompted.
+- **Basic facts are never wrong in a deliverable.** Websites are
+  liveness-checked, HQ is reconciled between sources, and legal names come
+  from verified profiles — the export blocks on unresolved issues.
+- **Everything is auditable.** Sessions record every stage, gate, and credit
+  decision; provenance and confidence survive to the final CSV; low-confidence
+  values export blank with a named gap, never as facts.

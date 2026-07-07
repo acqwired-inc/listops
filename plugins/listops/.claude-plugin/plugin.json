@@ -1,7 +1,7 @@
 {
   "name": "listops",
-  "version": "0.1.2",
-  "description": "Investment-grade company list building: MECE source planning, parallel gathering, DRA enrichment, thesis scoring, down-selection, and QA judging.",
+  "version": "0.2.0",
+  "description": "Investment-grade company list building on the Acqwired Research API: buyer-context planning, multi-source discovery, piloted human-reviewed enrichment, thesis scoring, independent QA, and deterministically verified exports.",
   "author": {
     "name": "Acqwired"
   },

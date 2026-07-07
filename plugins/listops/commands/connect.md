@@ -1,5 +1,5 @@
 ---
-description: Connect Claude Code to DRA and install the ListOps skills — paste your assigned API key once
+description: Connect Claude Code to the Acqwired Research API (DRA) and install the ListOps skills — paste your assigned API key once
 argument-hint: <your dra_ API key from the Acqwired dashboard, or blank to check status>
 ---
 
