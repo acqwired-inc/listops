@@ -312,18 +312,25 @@ def cmd_bootstrap(args):
     user would have followed anyway.
     """
     installed = installed_pack_version()
-    token = oauth_token()
+
+    # Prefer the connector's credential — it needs no setup at all. Fall back to a key
+    # configured some other way (/listops:connect, shell env, CI): those users deserve the
+    # same automatic refresh, and without this fallback their pack silently rots. A stale
+    # pack is not cosmetic — it pins tool names, so a rename leaves the qa-judge agent
+    # holding an allowlist of tools that no longer exist.
+    token, via_connector = oauth_token(), True
+    if not token:
+        stored = resolve_key()
+        token, via_connector = (stored if stored and stored.startswith(KEY_PREFIX) else None), False
 
     if not token:
-        # Silent when a key is configured some other way (shell env, /listops:connect,
-        # CI) — nothing is wrong, there is just no OAuth token to read.
-        if not installed and not resolve_key():
+        if not installed:
             print(f"ListOps: the '{SERVER_NAME}' connector is not authorized yet. Connect it "
                   "(one browser step), or run /listops:connect <your dra_ key>.")
         return
 
     shell_key = os.environ.get(ENV_VAR)
-    if shell_key and shell_key != token:
+    if via_connector and shell_key and shell_key != token:
         print(f"ListOps: a different {ENV_VAR} is set in your shell and takes precedence "
               "over the connector's credential — unset or align it if the pipeline misbehaves.")
 
@@ -334,7 +341,8 @@ def cmd_bootstrap(args):
         latest = server_pack_version(token)
         if not latest:
             return
-        store_key(token, with_mcp_server=False)
+        if via_connector:
+            store_key(token, with_mcp_server=False)
         if latest != installed:
             try:
                 version, count = install_pack(token, quiet=True)
@@ -349,13 +357,15 @@ def cmd_bootstrap(args):
     try:
         version, count = install_pack(token, quiet=True)
     except SystemExit:
-        print(f"ListOps: the '{SERVER_NAME}' connector's credential was rejected by the API, "
-              "so the pack was not installed. Re-authorize the connector, or run "
+        print("ListOps: the credential was rejected by the API, so the pack was not "
+              f"installed. Re-authorize the '{SERVER_NAME}' connector, or run "
               "/listops:connect <your dra_ key>.")
         return
-    store_key(token, with_mcp_server=False)
-    print(f"ListOps: installed {count} pack files (version {version}) using the "
-          f"'{SERVER_NAME}' connector credential — no separate key needed. "
+    if via_connector:
+        store_key(token, with_mcp_server=False)
+    origin = (f"using the '{SERVER_NAME}' connector credential — no separate key needed"
+              if via_connector else "using your stored key")
+    print(f"ListOps: installed {count} pack files (version {version}) {origin}. "
           "Restart Claude Code once to load the commands and the qa-judge agent.")
 
 
