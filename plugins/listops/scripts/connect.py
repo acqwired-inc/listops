@@ -177,6 +177,31 @@ def oauth_token():
     return None
 
 
+def no_credential_message():
+    """Explain the absence in terms that match the actual situation.
+
+    Both the pack location and the token source are Claude Code's: the pack installs under
+    the Claude Code config dir, and the OAuth token is read from Claude Code's credential
+    store. Claude Desktop authorizes connectors in its own app storage, which this script
+    cannot read — and has no config dir to install into either. A bare "no credential"
+    there sends people hunting for a key they do not need.
+    """
+    if not (config_dir() / CREDENTIALS_FILE).exists():
+        return (
+            f"No credential, and no Claude Code credential store at {config_dir() / CREDENTIALS_FILE}.\n"
+            "  If you are in Claude Desktop: nothing to do. The pack is a Claude Code feature — it\n"
+            "  installs under the Claude Code config dir, which Desktop does not use. Authorizing the\n"
+            f"  '{SERVER_NAME}' connector already gave you the tools; the /listops:* pipeline commands\n"
+            "  only exist in Claude Code.\n"
+            f"  If you are in Claude Code: authorize via /mcp -> {SERVER_NAME} -> Authenticate.\n"
+            f"  Headless: set {ENV_VAR}=dra_..."
+        )
+    return (
+        f"No credential. Authorize the '{SERVER_NAME}' connector (/mcp -> {SERVER_NAME} -> "
+        f"Authenticate), or set {ENV_VAR}=dra_..."
+    )
+
+
 def store_key(key, with_mcp_server):
     """Persist the key in settings.json; optionally add the header-auth server entry.
 
@@ -318,7 +343,10 @@ def cmd_bootstrap(args):
         token, via_connector = (stored if stored and stored.startswith(KEY_PREFIX) else None), False
 
     if not token:
-        if not installed:
+        # Only speak up where the pack could actually be installed. Without a Claude Code
+        # credential store this is not Claude Code, and a nag about authorizing would be
+        # noise on a client that has nothing to install.
+        if not installed and (config_dir() / CREDENTIALS_FILE).exists():
             print(f"ListOps: the '{SERVER_NAME}' connector is not authorized yet — authorize it "
                   f"(/mcp -> {SERVER_NAME} -> Authenticate) and the pipeline installs itself on "
                   f"the next start. Headless? Set {ENV_VAR}=dra_... in the environment instead.")
@@ -370,8 +398,7 @@ def cmd_update(args):
     # authorized the connector and never had a key written to settings.json.
     key = oauth_token() or resolve_key()
     if not key:
-        print(f"ERROR: no credential — authorize the {SERVER_NAME} connector "
-              f"or set {ENV_VAR}.", file=sys.stderr)
+        print(no_credential_message(), file=sys.stderr)
         sys.exit(2)
     installed = installed_pack_version()
     version, count = install_pack(validate_key(key), quiet=True)

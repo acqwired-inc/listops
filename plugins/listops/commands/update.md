@@ -3,6 +3,12 @@ description: Force a ListOps skill-pack refresh now, without restarting — for 
 argument-hint: (none)
 ---
 
+**Claude Desktop: this command does nothing for you.** The pack installs under the Claude
+Code config dir, which Desktop does not use, and the OAuth token it needs lives in Claude
+Code's credential store, not Desktop's. Authorizing the connector already gave you the
+tools — the `/listops:*` pipeline commands only exist in Claude Code. If the script says
+there is no credential store, that is the expected answer here, not a fault to fix.
+
 **You rarely need this.** The pack installs and self-updates from a session-start hook,
 which compares the installed version against the server on every start and re-downloads
 only on a change. This command exists for the one case the hook cannot cover: a new pack
