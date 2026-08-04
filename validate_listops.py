@@ -73,7 +73,7 @@ if hooks:
     commands = [h.get("command", "")
                 for group in (session_start or []) for h in (group.get("hooks") or [])]
     # The whole one-step setup rests on this hook firing; a typo here degrades silently
-    # into "user must run /listops:connect", which is exactly what it exists to avoid.
+    # into "nothing installs, ever" — the plugin ships no commands to fall back on.
     check(any("connect.py bootstrap" in c for c in commands),
           "SessionStart invokes connect.py bootstrap")
 

@@ -38,11 +38,11 @@ writes) — any session or command resumes exactly where the last one stopped.
 
 ## Setup
 
-This plugin is a **thin bootstrap**. Installing it gives you two commands —
-`/listops:connect` and `/listops:update`. The skills, pipeline commands, and the
-QA agent are **not shipped in the marketplace**; they're **downloaded from the DRA
-API on connect**, gated by a valid (org-validated) key, and written under
-`~/.claude/`. The proprietary logic never sits in a public repo.
+This plugin is a **thin bootstrap** — a connector and a hook, and no commands of its
+own. The skills, pipeline commands, and the QA agent are **not shipped in the
+marketplace**; they're **downloaded from the DRA API**, gated by a valid
+(org-validated) key, and written under `~/.claude/`. The proprietary logic never
+sits in a public repo.
 
 1. Install the plugin (marketplace README one level up). The bundled `.mcp.json`
    wires the `evergreen` MCP server.
@@ -58,23 +58,21 @@ connector is authorized the credential is already on disk and the hook just uses
 It also self-updates: each session start compares the installed pack against the server
 and re-downloads only on a change.
 
-`/listops:connect dra_...` remains for cases with no OAuth credential to read (CI, a
-shared machine, header auth via `claude mcp add -H`), and is what the hook tells you to
-run if it cannot find one. `/listops:update` forces a re-sync.
+**Headless / CI / no browser?** Export `DRA_API_KEY=dra_...` in the environment. The
+hook falls back to it when there is no OAuth credential to read, so the pack installs
+and self-updates exactly the same way — no command to run.
 
-Requires Python 3.8+ on PATH (the bootstrap script is stdlib-only).
-*(CI / power users: export `DRA_API_KEY=dra_...` in the shell — it takes
-precedence over settings.json — then `connect.py update` fetches the pack.)*
+Requires Python 3.8+ on PATH (the bootstrap script is stdlib-only). `connect.py` also
+exposes `set`/`update`/`check`/`clear` as a manual escape hatch if you ever need to
+drive it by hand.
 
 ## Commands
 
-`connect` and `update` ship with the plugin; the rest are **installed on connect**
-(they appear as `/listops:*` after the one-time setup + restart).
+Every command below is **installed by the hook**, not shipped in the marketplace — they
+appear as `/listops:*` once the connector is authorized and you restart.
 
 | Command | Stage |
 |---|---|
-| `/listops:connect <dra_ key>` | One-time setup: authorize + download the skill pack |
-| `/listops:update` | Re-sync the installed skills to the latest version |
 | `/listops:build <description + requirements>` | Full pipeline |
 | `/listops:plan` | Source payload + schema pack + budget |
 | `/listops:list` | LIST + INTAKE via the DRA API |

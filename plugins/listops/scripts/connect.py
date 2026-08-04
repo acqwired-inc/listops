@@ -158,7 +158,7 @@ def oauth_token():
     paste it a second time is asking for something we can just read.
 
     Claude Code owns this file's shape, so treat every surprise as "not available"
-    rather than an error; the caller falls back to /listops:connect.
+    rather than an error; the caller falls back to a configured DRA_API_KEY.
     """
     try:
         data = json.loads((config_dir() / CREDENTIALS_FILE).read_text(encoding="utf-8"))
@@ -314,7 +314,7 @@ def cmd_bootstrap(args):
     installed = installed_pack_version()
 
     # Prefer the connector's credential — it needs no setup at all. Fall back to a key
-    # configured some other way (/listops:connect, shell env, CI): those users deserve the
+    # configured some other way (shell env, settings.json, CI): those users deserve the
     # same automatic refresh, and without this fallback their pack silently rots. A stale
     # pack is not cosmetic — it pins tool names, so a rename leaves the qa-judge agent
     # holding an allowlist of tools that no longer exist.
@@ -325,8 +325,9 @@ def cmd_bootstrap(args):
 
     if not token:
         if not installed:
-            print(f"ListOps: the '{SERVER_NAME}' connector is not authorized yet. Connect it "
-                  "(one browser step), or run /listops:connect <your dra_ key>.")
+            print(f"ListOps: the '{SERVER_NAME}' connector is not authorized yet — authorize it "
+                  f"(/mcp -> {SERVER_NAME} -> Authenticate) and the pipeline installs itself on "
+                  f"the next start. Headless? Set {ENV_VAR}=dra_... in the environment instead.")
         return
 
     shell_key = os.environ.get(ENV_VAR)
@@ -358,8 +359,8 @@ def cmd_bootstrap(args):
         version, count = install_pack(token, quiet=True)
     except SystemExit:
         print("ListOps: the credential was rejected by the API, so the pack was not "
-              f"installed. Re-authorize the '{SERVER_NAME}' connector, or run "
-              "/listops:connect <your dra_ key>.")
+              f"installed. Re-authorize the '{SERVER_NAME}' connector, or check the "
+              f"{ENV_VAR} you have configured.")
         return
     if via_connector:
         store_key(token, with_mcp_server=False)
@@ -372,7 +373,8 @@ def cmd_bootstrap(args):
 def cmd_update(args):
     key = resolve_key()
     if not key:
-        print(f"ERROR: no {ENV_VAR} configured — run /listops:connect <dra_ key> first.", file=sys.stderr)
+        print(f"ERROR: no {ENV_VAR} configured — authorize the {SERVER_NAME} connector "
+              f"or set {ENV_VAR}.", file=sys.stderr)
         sys.exit(2)
     install_pack(validate_key(key))
     print("Update complete. Restart Claude Code if commands or the agent changed (skills hot-reload).")
@@ -401,14 +403,14 @@ def cmd_check(args):
     print(f"settings.json: {ENV_VAR}={mask(in_settings)}  ({path})" if in_settings else f"settings.json: {ENV_VAR} not set  ({path})")
     vf = config_dir() / VERSION_FILE
     installed = vf.read_text(encoding="utf-8").strip() if vf.exists() else None
-    print(f"skill pack:    {installed} installed" if installed else "skill pack:    not installed (run /listops:connect)")
+    print(f"skill pack:    {installed} installed" if installed else f"skill pack:    not installed (authorize the {SERVER_NAME} connector, then restart)")
     latest = server_pack_version(in_shell or in_settings)
     if latest and installed and latest != installed:
-        print(f"               OUTDATED — server has {latest}. Run /listops:update.")
+        print(f"               OUTDATED — server has {latest}; the next session start updates it.")
     elif latest and installed:
         print("               up to date")
     if not in_shell and not in_settings:
-        print("\nNot connected. Run: /listops:connect <your dra_ key>")
+        print(f"\nNot connected. Authorize the {SERVER_NAME} connector, or set {ENV_VAR}.")
         sys.exit(2)
 
 

@@ -38,11 +38,11 @@ installs the skill pack itself, and keeps it current from then on.
 `/listops:build <your thesis>` runs the full pipeline.
 
 <details>
-<summary>Manual setup — CI, custom <code>CLAUDE_CONFIG_DIR</code>, or header auth</summary>
+<summary>Headless — CI, a shared machine, or header auth</summary>
 
-`/listops:connect dra_your_key_here` does the same job from a pasted key, for cases
-where there is no OAuth credential to read: CI, a shared machine, or a server added
-with `claude mcp add -H "Authorization: ..."`. `/listops:update` re-syncs on demand.
+Where there is no OAuth credential to read, export `DRA_API_KEY=dra_...` in the
+environment. The hook falls back to it and installs and self-updates the pack the
+same way, so there is still nothing to run by hand.
 </details>
 
 ## How it works — thin bootstrap, key-gated skills
@@ -51,7 +51,7 @@ This repository is intentionally **thin**. It contains only:
 
 - `.mcp.json` — wires the `evergreen` MCP server (`https://api.acqwired.com/v1/mcp`)
 - `hooks/hooks.json` — a `SessionStart` hook that installs and refreshes the pack
-- `/listops:connect` and `/listops:update` commands + `connect.py`
+- `scripts/connect.py` — what the hook runs; no slash commands of its own
 
 The actual skills, pipeline commands, and the QA agent are **not** in this repo.
 The hook **downloads the ListOps skill pack from the DRA API** — gated server-side by
