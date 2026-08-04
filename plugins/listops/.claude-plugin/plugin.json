@@ -1,6 +1,6 @@
 {
   "name": "listops",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Investment-grade company list building on the Acqwired Research API: buyer-context planning, multi-source discovery, piloted human-reviewed enrichment, thesis scoring, independent QA, and deterministically verified exports.",
   "author": {
     "name": "Acqwired"

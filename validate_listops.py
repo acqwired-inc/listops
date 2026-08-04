@@ -60,9 +60,9 @@ mcp, e = load_json(PLUGIN / ".mcp.json")
 check(mcp is not None, ".mcp.json is valid JSON", e or "")
 if mcp:
     servers = mcp.get("mcpServers", {})
-    check("listops" in servers, ".mcp.json defines listops server")
-    s = servers.get("listops", {})
-    check(s.get("type") == "http" and bool(s.get("url")), "listops is http with url")
+    check("evergreen" in servers, ".mcp.json defines evergreen server")
+    s = servers.get("evergreen", {})
+    check(s.get("type") == "http" and bool(s.get("url")), "evergreen is http with url")
 
 print("\n== Frontmatter (commands / agents / skills) ==")
 for cmd in sorted((PLUGIN / "commands").glob("*.md")):

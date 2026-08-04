@@ -26,8 +26,7 @@ import urllib.request
 from pathlib import Path
 
 ENV_VAR = "DRA_API_KEY"
-SERVER_NAME = "listops"
-LEGACY_SERVER_NAME = "dra-research"  # pre-0.3.0 name; cleaned up on set/update/clear
+SERVER_NAME = "evergreen"
 KEY_PREFIX = "dra_"
 MIN_KEY_LEN = 12
 PLACEHOLDER = "__LISTOPS_SKILLS__"
@@ -212,12 +211,6 @@ def cmd_set(args):
             "Authorization": f"Bearer {key}",
         },
     }
-    # The server was called "dra-research" before 0.3.0. Drop a leftover entry so
-    # upgraders don't end up with two servers pointing at the same URL (which
-    # would duplicate every tool).
-    if LEGACY_SERVER_NAME in mcp_servers:
-        del mcp_servers[LEGACY_SERVER_NAME]
-        print(f"Removed the legacy '{LEGACY_SERVER_NAME}' MCP server (renamed to '{SERVER_NAME}').")
     data["mcpServers"] = mcp_servers
 
     write_json_atomic(path, data)
@@ -228,7 +221,7 @@ def cmd_set(args):
     print("Downloading the ListOps skill pack...")
     install_pack(key)
     print()
-    print("NEXT: restart Claude Code once -- the keyed listops MCP server and the")
+    print(f"NEXT: restart Claude Code once -- the keyed {SERVER_NAME} MCP server and the")
     print("downloaded skills/commands/agent all load at startup. Then run /listops:status.")
 
 
@@ -292,13 +285,11 @@ def cmd_clear(args):
 
     # Also remove the MCP server auth config written by cmd_set
     mcp = data.get("mcpServers")
-    if isinstance(mcp, dict):
-        for name in (SERVER_NAME, LEGACY_SERVER_NAME):
-            if name in mcp:
-                del mcp[name]
-                changed = True
-                print(f"Removed {name} MCP server config from settings.json.")
-        if changed and not mcp:
+    if isinstance(mcp, dict) and SERVER_NAME in mcp:
+        del mcp[SERVER_NAME]
+        changed = True
+        print(f"Removed {SERVER_NAME} MCP server config from settings.json.")
+        if not mcp:
             data.pop("mcpServers", None)
 
     if changed:

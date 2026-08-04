@@ -8,7 +8,7 @@ a screened, enriched, thesis-ranked list, powered by the
 ## Install — Claude Desktop
 
 1. **Customize → Plugins → Add marketplace** — search for `acqwired-inc/listops`, browse to **Personal**, click **+**.
-2. On the plugin page, find **listops** under **Connectors** and click it.
+2. On the plugin page, find **evergreen** under **Connectors** and click it.
 3. A browser window opens at **platform.acqwired.com/connect** — paste your `dra_…` API key and click **Authorize**.
 4. Claude Desktop stores the token. Run `/listops:status` to confirm.
 
@@ -37,7 +37,7 @@ keeps the skills current.
 
 This repository is intentionally **thin**. It contains only:
 
-- `.mcp.json` — wires the `listops` MCP server (`https://api.acqwired.com/v1/mcp`)
+- `.mcp.json` — wires the `evergreen` MCP server (`https://api.acqwired.com/v1/mcp`)
 - `/listops:connect` and `/listops:update` commands + `connect.py`
 
 The actual skills, pipeline commands, and the QA agent are **not** in this repo.

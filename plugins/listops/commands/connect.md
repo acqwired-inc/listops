@@ -25,7 +25,7 @@ Do this:
    (401) and nothing is installed.
 
 3. Relay the script output (files installed + pack version), then state clearly:
-   **restart Claude Code once** — the keyed `listops` MCP server and the
+   **restart Claude Code once** — the keyed `evergreen` MCP server and the
    downloaded skills/commands/agent all load at startup.
 
 4. After restart, `/listops:status` confirms the connection + funnel, and the full
