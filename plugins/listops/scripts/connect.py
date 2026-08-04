@@ -35,7 +35,9 @@ ENV_VAR = "DRA_API_KEY"
 SERVER_NAME = "listops"
 # Names this connector shipped under before. A stale entry points at the same URL as the
 # current one, and two entries on one URL means every tool shows up twice.
-LEGACY_SERVER_NAMES = ("dra-research", "evergreen")
+# "evergreen" is deliberately absent: it was only ever live for a few hours and never
+# reached users, so reaping it would only risk deleting someone's unrelated server.
+LEGACY_SERVER_NAMES = ("dra-research",)
 # Written by Claude Code when a connector completes OAuth. Its format is Claude Code's,
 # not ours, so every read is best-effort: unreadable means "not authorized yet".
 CREDENTIALS_FILE = ".credentials.json"
