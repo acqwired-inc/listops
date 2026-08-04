@@ -45,7 +45,7 @@ API on connect**, gated by a valid (org-validated) key, and written under
 `~/.claude/`. The proprietary logic never sits in a public repo.
 
 1. Install the plugin (marketplace README one level up). The bundled `.mcp.json`
-   wires the `dra-research` MCP server.
+   wires the `listops` MCP server.
 2. **Connect.** Get your assigned key from the Acqwired dashboard (Settings → API
    key), then run `/listops:connect dra_...`. This validates the key, stores it in
    user-scope `~/.claude/settings.json`, and **downloads + installs the ListOps

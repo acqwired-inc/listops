@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "dra-research": {
+    "listops": {
       "type": "http",
       "url": "https://api.acqwired.com/v1/mcp"
     }

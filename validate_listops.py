@@ -60,9 +60,9 @@ mcp, e = load_json(PLUGIN / ".mcp.json")
 check(mcp is not None, ".mcp.json is valid JSON", e or "")
 if mcp:
     servers = mcp.get("mcpServers", {})
-    check("dra-research" in servers, ".mcp.json defines dra-research server")
-    s = servers.get("dra-research", {})
-    check(s.get("type") == "http" and bool(s.get("url")), "dra-research is http with url")
+    check("listops" in servers, ".mcp.json defines listops server")
+    s = servers.get("listops", {})
+    check(s.get("type") == "http" and bool(s.get("url")), "listops is http with url")
 
 print("\n== Frontmatter (commands / agents / skills) ==")
 for cmd in sorted((PLUGIN / "commands").glob("*.md")):

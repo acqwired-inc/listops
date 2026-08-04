@@ -26,6 +26,8 @@ import urllib.request
 from pathlib import Path
 
 ENV_VAR = "DRA_API_KEY"
+SERVER_NAME = "listops"
+LEGACY_SERVER_NAME = "dra-research"  # pre-0.3.0 name; cleaned up on set/update/clear
 KEY_PREFIX = "dra_"
 MIN_KEY_LEN = 12
 PLACEHOLDER = "__LISTOPS_SKILLS__"
@@ -46,7 +48,7 @@ def mcp_base_url():
     mcp = Path(__file__).resolve().parent.parent / ".mcp.json"
     try:
         data = json.loads(mcp.read_text(encoding="utf-8"))
-        url = data["mcpServers"]["dra-research"]["url"]
+        url = data["mcpServers"][SERVER_NAME]["url"]
     except Exception:
         return None
     return url[:-4] if url.endswith("/mcp") else url.rstrip("/")
@@ -203,13 +205,19 @@ def cmd_set(args):
     # header, allowing Claude Desktop to use OAuth instead).
     mcp_servers = data.get("mcpServers") if isinstance(data.get("mcpServers"), dict) else {}
     base = mcp_base_url() or "https://api.acqwired.com/v1"
-    mcp_servers["dra-research"] = {
+    mcp_servers[SERVER_NAME] = {
         "type": "http",
         "url": f"{base}/mcp",
         "headers": {
             "Authorization": f"Bearer {key}",
         },
     }
+    # The server was called "dra-research" before 0.3.0. Drop a leftover entry so
+    # upgraders don't end up with two servers pointing at the same URL (which
+    # would duplicate every tool).
+    if LEGACY_SERVER_NAME in mcp_servers:
+        del mcp_servers[LEGACY_SERVER_NAME]
+        print(f"Removed the legacy '{LEGACY_SERVER_NAME}' MCP server (renamed to '{SERVER_NAME}').")
     data["mcpServers"] = mcp_servers
 
     write_json_atomic(path, data)
@@ -220,7 +228,7 @@ def cmd_set(args):
     print("Downloading the ListOps skill pack...")
     install_pack(key)
     print()
-    print("NEXT: restart Claude Code once -- the keyed dra-research MCP server and the")
+    print("NEXT: restart Claude Code once -- the keyed listops MCP server and the")
     print("downloaded skills/commands/agent all load at startup. Then run /listops:status.")
 
 
@@ -284,12 +292,14 @@ def cmd_clear(args):
 
     # Also remove the MCP server auth config written by cmd_set
     mcp = data.get("mcpServers")
-    if isinstance(mcp, dict) and "dra-research" in mcp:
-        del mcp["dra-research"]
-        if not mcp:
+    if isinstance(mcp, dict):
+        for name in (SERVER_NAME, LEGACY_SERVER_NAME):
+            if name in mcp:
+                del mcp[name]
+                changed = True
+                print(f"Removed {name} MCP server config from settings.json.")
+        if changed and not mcp:
             data.pop("mcpServers", None)
-        changed = True
-        print("Removed dra-research MCP server config from settings.json.")
 
     if changed:
         write_json_atomic(path, data)
