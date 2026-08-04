@@ -365,13 +365,21 @@ def cmd_bootstrap(args):
 
 
 def cmd_update(args):
-    key = resolve_key()
+    # Same credential order as bootstrap: the connector first, then a configured key.
+    # Without the oauth_token() fallback this would fail for anyone who only ever
+    # authorized the connector and never had a key written to settings.json.
+    key = oauth_token() or resolve_key()
     if not key:
-        print(f"ERROR: no {ENV_VAR} configured — authorize the {SERVER_NAME} connector "
+        print(f"ERROR: no credential — authorize the {SERVER_NAME} connector "
               f"or set {ENV_VAR}.", file=sys.stderr)
         sys.exit(2)
-    install_pack(validate_key(key))
-    print("Update complete. Restart Claude Code if commands or the agent changed (skills hot-reload).")
+    installed = installed_pack_version()
+    version, count = install_pack(validate_key(key), quiet=True)
+    if installed == version:
+        print(f"Already up to date — pack {version} ({count} files).")
+    else:
+        print(f"Updated {installed or '(none)'} -> {version} ({count} files).")
+    print("Skills hot-reload; restart Claude Code if commands or the agent changed.")
 
 
 def server_pack_version(key):
