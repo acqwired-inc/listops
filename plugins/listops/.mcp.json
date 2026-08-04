@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "evergreen": {
+    "listops": {
       "type": "http",
       "url": "https://api.acqwired.com/v1/mcp"
     }

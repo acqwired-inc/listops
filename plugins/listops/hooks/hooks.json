@@ -1,5 +1,5 @@
 {
-  "description": "Install/refresh the ListOps pack from the evergreen connector's OAuth credential, so authorizing the connector is the only setup step",
+  "description": "Install/refresh the ListOps pack from the listops connector's OAuth credential, so authorizing the connector is the only setup step",
   "hooks": {
     "SessionStart": [
       {

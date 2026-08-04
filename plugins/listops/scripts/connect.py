@@ -6,7 +6,7 @@ The public plugin is a thin bootstrap. The real skills/commands/agent are NOT
 shipped in the marketplace — they're downloaded from the DRA API (gated by a
 valid, org-validated key) and written under the user's Claude config dir.
 
-Normally nothing here is run by hand: authorizing the `evergreen` connector is the only
+Normally nothing here is run by hand: authorizing the `listops` connector is the only
 setup step, and the SessionStart hook calls `bootstrap` to finish the job. The OAuth
 access token IS the user's dra_ key, so the credential is already on disk by then.
 
@@ -32,12 +32,10 @@ import urllib.request
 from pathlib import Path
 
 ENV_VAR = "DRA_API_KEY"
-SERVER_NAME = "evergreen"
+SERVER_NAME = "listops"
 # Names this connector shipped under before. A stale entry points at the same URL as the
 # current one, and two entries on one URL means every tool shows up twice.
-# "listops" is deliberately not listed: it is the plugin's own name, and reaping it would
-# delete an unrelated server that happens to be called that.
-LEGACY_SERVER_NAMES = ("dra-research",)
+LEGACY_SERVER_NAMES = ("dra-research", "evergreen")
 # Written by Claude Code when a connector completes OAuth. Its format is Claude Code's,
 # not ours, so every read is best-effort: unreadable means "not authorized yet".
 CREDENTIALS_FILE = ".credentials.json"
@@ -167,8 +165,8 @@ def oauth_token():
     entries = data.get("mcpOAuth")
     if not isinstance(entries, dict):
         return None
-    # Entry keys are scope-namespaced and vary by install method — "evergreen" when added
-    # directly, "plugin:listops:evergreen" via the marketplace. Match the server name as a
+    # Entry keys are scope-namespaced and vary by install method — "listops" when added
+    # directly, "plugin:listops:listops" via the marketplace. Match the server name as a
     # path segment instead of pinning one spelling.
     for name, entry in entries.items():
         if not isinstance(entry, dict) or SERVER_NAME not in str(name).split(":"):

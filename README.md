@@ -8,7 +8,7 @@ a screened, enriched, thesis-ranked list, powered by the
 ## Install — Claude Desktop
 
 1. **Customize → Plugins → Add marketplace** — search for `acqwired-inc/listops`, browse to **Personal**, click **+**.
-2. On the plugin page, find **evergreen** under **Connectors** and click it.
+2. On the plugin page, find **listops** under **Connectors** and click it.
 3. A browser window opens at **platform.acqwired.com/connect** — paste your `dra_…` API key and click **Authorize**.
 4. Claude Desktop stores the token. Run `/listops:status` to confirm.
 
@@ -24,7 +24,7 @@ a screened, enriched, thesis-ranked list, powered by the
 /plugin marketplace add acqwired-inc/listops
 # 2. install the plugin
 /plugin install listops@acqwired
-# 3. authorize the connector:  /mcp  ->  evergreen  ->  Authenticate
+# 3. authorize the connector:  /mcp  ->  listops  ->  Authenticate
 #    (a browser opens; paste your dra_ key once)
 # 4. restart Claude Code, then:
 /listops:status
@@ -49,7 +49,7 @@ same way, so there is still nothing to run by hand.
 
 This repository is intentionally **thin**. It contains only:
 
-- `.mcp.json` — wires the `evergreen` MCP server (`https://api.acqwired.com/v1/mcp`)
+- `.mcp.json` — wires the `listops` MCP server (`https://api.acqwired.com/v1/mcp`)
 - `hooks/hooks.json` — a `SessionStart` hook that installs and refreshes the pack
 - `scripts/connect.py` — what the hook runs; no slash commands of its own
 
@@ -67,8 +67,8 @@ authorized yet, or the credential cannot be read, it prints the manual instructi
 exits cleanly. It downloads only when the pack is missing or the server has a newer
 version, so ordinary session starts cost one small request.
 
-On **Claude Desktop** there is no `~/.claude` to install into, so the pipeline commands
-are served over MCP as prompts instead — same commands, no download.
+The connector and the plugin share the name `listops`, so it appears as
+`plugin:listops:listops` — the same shape the official Slack and Atlassian plugins use.
 
 ## What you get after connect
 

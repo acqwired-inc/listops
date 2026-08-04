@@ -46,7 +46,7 @@ sits in a public repo.
 
 1. Install the plugin (marketplace README one level up). The bundled `.mcp.json`
    wires the `evergreen` MCP server.
-2. **Authorize the connector** — `/mcp` → `evergreen` → Authenticate. A browser opens;
+2. **Authorize the connector** — `/mcp` → `listops` → Authenticate. A browser opens;
    paste your key from the Acqwired dashboard (Settings → API key) once.
 3. **Restart Claude Code once.** The `SessionStart` hook reads the credential OAuth just
    stored and installs the pack; the commands and agent load on the following start.
