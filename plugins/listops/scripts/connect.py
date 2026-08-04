@@ -33,11 +33,9 @@ from pathlib import Path
 
 ENV_VAR = "DRA_API_KEY"
 SERVER_NAME = "listops"
-# Names this connector shipped under before. A stale entry points at the same URL as the
-# current one, and two entries on one URL means every tool shows up twice.
-# "evergreen" is deliberately absent: it was only ever live for a few hours and never
-# reached users, so reaping it would only risk deleting someone's unrelated server.
-LEGACY_SERVER_NAMES = ("dra-research",)
+# Deliberately no legacy-name purge: this script only ever removes a server entry it
+# owns. Reaping names the connector used previously would mean deleting entries a user
+# may have created themselves under the same name.
 # Written by Claude Code when a connector completes OAuth. Its format is Claude Code's,
 # not ours, so every read is best-effort: unreadable means "not authorized yet".
 CREDENTIALS_FILE = ".credentials.json"
@@ -204,10 +202,6 @@ def store_key(key, with_mcp_server):
             "url": f"{base}/mcp",
             "headers": {"Authorization": f"Bearer {key}"},
         }
-    for stale in LEGACY_SERVER_NAMES:
-        if stale in mcp_servers:
-            del mcp_servers[stale]
-            print(f"Removed the superseded '{stale}' MCP server (now '{SERVER_NAME}').")
     if mcp_servers:
         data["mcpServers"] = mcp_servers
     else:
@@ -433,11 +427,10 @@ def cmd_clear(args):
     # name this connector shipped under previously.
     mcp = data.get("mcpServers")
     if isinstance(mcp, dict):
-        for name in (SERVER_NAME, *LEGACY_SERVER_NAMES):
-            if name in mcp:
-                del mcp[name]
-                changed = True
-                print(f"Removed {name} MCP server config from settings.json.")
+        if SERVER_NAME in mcp:
+            del mcp[SERVER_NAME]
+            changed = True
+            print(f"Removed {SERVER_NAME} MCP server config from settings.json.")
         if not mcp:
             data.pop("mcpServers", None)
 
