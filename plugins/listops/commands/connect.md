@@ -1,9 +1,15 @@
 ---
-description: Connect Claude Code to the Acqwired Research API (DRA) and install the ListOps skills — paste your assigned API key once
+description: Manually connect to the Acqwired Research API (DRA) with a pasted key — only needed when the evergreen connector cannot be authorized
 argument-hint: <your dra_ API key from the Acqwired dashboard, or blank to check status>
 ---
 
-Authorize the DRA connection **and install the ListOps skill pack**. The skills,
+**Most users do not need this.** Authorizing the `evergreen` connector (`/mcp` →
+`evergreen` → Authenticate) is normally the only setup step: the OAuth token it issues
+*is* the `dra_` key, so the SessionStart hook picks it up and installs the pack on the
+next start. Reach for this command only when there is no OAuth credential to read — CI,
+a shared machine, header auth via `claude mcp add -H` — or when the hook says to.
+
+It authorizes the DRA connection **and installs the ListOps skill pack**. The skills,
 pipeline commands, and qa-judge agent are NOT bundled in this plugin — they're
 downloaded from the DRA API on connect, gated by your (org-validated) key, and
 written under your Claude config dir.

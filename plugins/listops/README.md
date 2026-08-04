@@ -46,13 +46,21 @@ API on connect**, gated by a valid (org-validated) key, and written under
 
 1. Install the plugin (marketplace README one level up). The bundled `.mcp.json`
    wires the `evergreen` MCP server.
-2. **Connect.** Get your assigned key from the Acqwired dashboard (Settings → API
-   key), then run `/listops:connect dra_...`. This validates the key, stores it in
-   user-scope `~/.claude/settings.json`, and **downloads + installs the ListOps
-   skill pack**. An invalid key is rejected server-side (401) and nothing installs.
-3. **Restart Claude Code once** — the keyed MCP server and the downloaded
-   skills/commands/agent all load at startup. Then `/listops:status` confirms.
-4. `/listops:update` re-syncs the skills to the latest version anytime.
+2. **Authorize the connector** — `/mcp` → `evergreen` → Authenticate. A browser opens;
+   paste your key from the Acqwired dashboard (Settings → API key) once.
+3. **Restart Claude Code once.** The `SessionStart` hook reads the credential OAuth just
+   stored and installs the pack; the commands and agent load on the following start.
+   Then `/listops:status` confirms.
+
+There is deliberately no second key prompt. DRA's authorization server is
+bring-your-own-key — the access token it issues **is** your `dra_` key — so once the
+connector is authorized the credential is already on disk and the hook just uses it.
+It also self-updates: each session start compares the installed pack against the server
+and re-downloads only on a change.
+
+`/listops:connect dra_...` remains for cases with no OAuth credential to read (CI, a
+shared machine, header auth via `claude mcp add -H`), and is what the hook tells you to
+run if it cannot find one. `/listops:update` forces a re-sync.
 
 Requires Python 3.8+ on PATH (the bootstrap script is stdlib-only).
 *(CI / power users: export `DRA_API_KEY=dra_...` in the shell — it takes

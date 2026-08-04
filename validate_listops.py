@@ -64,6 +64,23 @@ if mcp:
     s = servers.get("evergreen", {})
     check(s.get("type") == "http" and bool(s.get("url")), "evergreen is http with url")
 
+hooks, e = load_json(PLUGIN / "hooks" / "hooks.json")
+check(hooks is not None, "hooks/hooks.json is valid JSON", e or "")
+if hooks:
+    session_start = (hooks.get("hooks") or {}).get("SessionStart")
+    check(isinstance(session_start, list) and len(session_start) > 0,
+          "hooks.json registers a SessionStart hook")
+    commands = [h.get("command", "")
+                for group in (session_start or []) for h in (group.get("hooks") or [])]
+    # The whole one-step setup rests on this hook firing; a typo here degrades silently
+    # into "user must run /listops:connect", which is exactly what it exists to avoid.
+    check(any("connect.py bootstrap" in c for c in commands),
+          "SessionStart invokes connect.py bootstrap")
+
+src = (PLUGIN / "scripts" / "connect.py").read_text(encoding="utf-8")
+check('"bootstrap"' in src, "connect.py registers the bootstrap subcommand")
+check("mcpOAuth" in src, "connect.py reads the connector's stored OAuth credential")
+
 print("\n== Frontmatter (commands / agents / skills) ==")
 for cmd in sorted((PLUGIN / "commands").glob("*.md")):
     fm = frontmatter(cmd)
@@ -79,7 +96,9 @@ for sk in sorted((PLUGIN / "skills").glob("*/SKILL.md")):
 print("\n== ${CLAUDE_PLUGIN_ROOT} script references resolve ==")
 ref_re = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([A-Za-z0-9_./-]+)")
 missing = 0
-for md in sorted(PLUGIN.rglob("*.md")):
+for md in [*sorted(PLUGIN.rglob("*.md")), PLUGIN / "hooks" / "hooks.json"]:
+    if not md.exists():
+        continue
     for rel in ref_re.findall(md.read_text(encoding="utf-8")):
         rel = rel.rstrip(".,);:`'\"")
         if "*" in rel or rel.endswith("/"):

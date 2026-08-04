@@ -24,31 +24,51 @@ a screened, enriched, thesis-ranked list, powered by the
 /plugin marketplace add acqwired-inc/listops
 # 2. install the plugin
 /plugin install listops@acqwired
-# 3. connect with your Acqwired API key (starts with dra_)
-/listops:connect dra_your_key_here
+# 3. authorize the connector:  /mcp  ->  evergreen  ->  Authenticate
+#    (a browser opens; paste your dra_ key once)
 # 4. restart Claude Code, then:
 /listops:status
 ```
 
-`/listops:build <your thesis>` runs the full pipeline; `/listops:update`
-keeps the skills current.
+**Authorizing the connector is the only setup step.** There is no second key to
+paste: the DRA authorization server is bring-your-own-key, so the token it issues
+*is* your `dra_` key. On the next session start the plugin reads that credential,
+installs the skill pack itself, and keeps it current from then on.
+
+`/listops:build <your thesis>` runs the full pipeline.
+
+<details>
+<summary>Manual setup — CI, custom <code>CLAUDE_CONFIG_DIR</code>, or header auth</summary>
+
+`/listops:connect dra_your_key_here` does the same job from a pasted key, for cases
+where there is no OAuth credential to read: CI, a shared machine, or a server added
+with `claude mcp add -H "Authorization: ..."`. `/listops:update` re-syncs on demand.
+</details>
 
 ## How it works — thin bootstrap, key-gated skills
 
 This repository is intentionally **thin**. It contains only:
 
 - `.mcp.json` — wires the `evergreen` MCP server (`https://api.acqwired.com/v1/mcp`)
+- `hooks/hooks.json` — a `SessionStart` hook that installs and refreshes the pack
 - `/listops:connect` and `/listops:update` commands + `connect.py`
 
 The actual skills, pipeline commands, and the QA agent are **not** in this repo.
-On `/listops:connect`, the script validates your key, then **downloads the ListOps
-skill pack from the DRA API** — gated server-side by your (org-validated) key — and
-installs it under `~/.claude/`. The intelligence stays server-side; an invalid key
-gets nothing.
+The hook **downloads the ListOps skill pack from the DRA API** — gated server-side by
+your (org-validated) key — and installs it under `~/.claude/`. The intelligence stays
+server-side; an invalid key gets nothing.
 
 ```
-install plugin → /listops:connect <key> → pack downloads (key-gated) → restart → full pipeline
+install plugin → authorize connector → restart → pack installs itself → full pipeline
 ```
+
+The hook never asks for anything and never blocks a session: if the connector is not
+authorized yet, or the credential cannot be read, it prints the manual instruction and
+exits cleanly. It downloads only when the pack is missing or the server has a newer
+version, so ordinary session starts cost one small request.
+
+On **Claude Desktop** there is no `~/.claude` to install into, so the pipeline commands
+are served over MCP as prompts instead — same commands, no download.
 
 ## What you get after connect
 

@@ -6,7 +6,13 @@ The public plugin is a thin bootstrap. The real skills/commands/agent are NOT
 shipped in the marketplace — they're downloaded from the DRA API (gated by a
 valid, org-validated key) and written under the user's Claude config dir.
 
-  set --key dra_xxx   validate the key, store it in user settings.json, then
+Normally nothing here is run by hand: authorizing the `evergreen` connector is the only
+setup step, and the SessionStart hook calls `bootstrap` to finish the job. The OAuth
+access token IS the user's dra_ key, so the credential is already on disk by then.
+
+  bootstrap           SessionStart hook: install/refresh the pack using the connector's
+                      OAuth token. Silent when there is nothing to do; never fails a session
+  set --key dra_xxx   fallback: validate the key, store it in user settings.json, then
                       download + install the ListOps skill pack
   update              re-download + reinstall the pack (uses the stored/env key)
   check               report the configured key + installed pack version (masked)
@@ -27,6 +33,14 @@ from pathlib import Path
 
 ENV_VAR = "DRA_API_KEY"
 SERVER_NAME = "evergreen"
+# Names this connector shipped under before. A stale entry points at the same URL as the
+# current one, and two entries on one URL means every tool shows up twice.
+# "listops" is deliberately not listed: it is the plugin's own name, and reaping it would
+# delete an unrelated server that happens to be called that.
+LEGACY_SERVER_NAMES = ("dra-research",)
+# Written by Claude Code when a connector completes OAuth. Its format is Claude Code's,
+# not ours, so every read is best-effort: unreadable means "not authorized yet".
+CREDENTIALS_FILE = ".credentials.json"
 KEY_PREFIX = "dra_"
 MIN_KEY_LEN = 12
 PLACEHOLDER = "__LISTOPS_SKILLS__"
@@ -135,8 +149,81 @@ def resolve_key():
     return env.get(ENV_VAR) if isinstance(env, dict) else None
 
 
-def install_pack(key):
-    """Download the key-gated ListOps pack and write it under the config dir."""
+def oauth_token():
+    """The dra_ key that connector OAuth already persisted, or None.
+
+    This is what makes the second setup step unnecessary: the DRA authorization server
+    is bring-your-own-key, so the access token it issues IS the user's dra_ key. Once
+    the connector is authorized the credential is already on disk — asking the user to
+    paste it a second time is asking for something we can just read.
+
+    Claude Code owns this file's shape, so treat every surprise as "not available"
+    rather than an error; the caller falls back to /listops:connect.
+    """
+    try:
+        data = json.loads((config_dir() / CREDENTIALS_FILE).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ValueError):
+        return None
+    entries = data.get("mcpOAuth")
+    if not isinstance(entries, dict):
+        return None
+    # Entry keys are scope-namespaced and vary by install method — "evergreen" when added
+    # directly, "plugin:listops:evergreen" via the marketplace. Match the server name as a
+    # path segment instead of pinning one spelling.
+    for name, entry in entries.items():
+        if not isinstance(entry, dict) or SERVER_NAME not in str(name).split(":"):
+            continue
+        token = entry.get("accessToken")
+        if isinstance(token, str) and token.startswith(KEY_PREFIX):
+            return token
+    return None
+
+
+def store_key(key, with_mcp_server):
+    """Persist the key in settings.json; optionally add the header-auth server entry.
+
+    with_mcp_server=False is the OAuth path: the connector already exists (from the
+    plugin's .mcp.json, authorized via OAuth), so writing a same-named entry here would
+    register a SECOND server on the same URL and duplicate all 24 tools.
+
+    Returns True if the key was already present.
+    """
+    path = settings_path()
+    data = load_settings(path)
+
+    env = data.get("env") if isinstance(data.get("env"), dict) else {}
+    existing = env.get(ENV_VAR)
+    env[ENV_VAR] = key
+    data["env"] = env
+
+    mcp_servers = data.get("mcpServers") if isinstance(data.get("mcpServers"), dict) else {}
+    if with_mcp_server:
+        base = mcp_base_url() or "https://api.acqwired.com/v1"
+        mcp_servers[SERVER_NAME] = {
+            "type": "http",
+            "url": f"{base}/mcp",
+            "headers": {"Authorization": f"Bearer {key}"},
+        }
+    for stale in LEGACY_SERVER_NAMES:
+        if stale in mcp_servers:
+            del mcp_servers[stale]
+            print(f"Removed the superseded '{stale}' MCP server (now '{SERVER_NAME}').")
+    if mcp_servers:
+        data["mcpServers"] = mcp_servers
+    else:
+        data.pop("mcpServers", None)
+
+    write_json_atomic(path, data)
+    return bool(existing)
+
+
+def install_pack(key, quiet=False):
+    """Download the key-gated ListOps pack and write it under the config dir.
+
+    Returns (version, file_count). `quiet` suppresses the progress chatter for the
+    SessionStart path, whose stdout lands in Claude's context — one summary line there
+    is useful, five are noise.
+    """
     base = mcp_base_url()
     if not base:
         print("ERROR: could not read the MCP url from .mcp.json — cannot locate the skill endpoint.", file=sys.stderr)
@@ -182,39 +269,30 @@ def install_pack(key):
         if target.exists() and rel not in served:
             try:
                 target.unlink()
-                print(f"Removed legacy {why}.")
+                if not quiet:
+                    print(f"Removed legacy {why}.")
             except OSError:
                 pass
-    print(f"Installed {len(files)} ListOps files (pack {version}) under {cfg}")
+    if not quiet:
+        print(f"Installed {len(files)} ListOps files (pack {version}) under {cfg}")
+    return version, len(files)
+
+
+def installed_pack_version():
+    """Version stamped by the last successful install, or None if never installed."""
+    vf = config_dir() / VERSION_FILE
+    try:
+        return vf.read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
 
 
 def cmd_set(args):
     key = validate_key(args.key)
-    path = settings_path()
-    data = load_settings(path)
-
-    # Store key in env (legacy / fallback)
-    env = data.get("env") if isinstance(data.get("env"), dict) else {}
-    existing = env.get(ENV_VAR)
-    env[ENV_VAR] = key
-    data["env"] = env
-
-    # Also write the MCP server config with the auth header into settings.json so
-    # Claude Code uses the stored key directly (the plugin .mcp.json has no static
-    # header, allowing Claude Desktop to use OAuth instead).
-    mcp_servers = data.get("mcpServers") if isinstance(data.get("mcpServers"), dict) else {}
-    base = mcp_base_url() or "https://api.acqwired.com/v1"
-    mcp_servers[SERVER_NAME] = {
-        "type": "http",
-        "url": f"{base}/mcp",
-        "headers": {
-            "Authorization": f"Bearer {key}",
-        },
-    }
-    data["mcpServers"] = mcp_servers
-
-    write_json_atomic(path, data)
-    print(f"{'Updated' if existing else 'Saved'} {ENV_VAR}={mask(key)} in {path}")
+    # Manual path: the user pasted a key rather than authorizing the connector, so also
+    # write the header-auth server entry — there may be no OAuth-backed connector at all.
+    existing = store_key(key, with_mcp_server=True)
+    print(f"{'Updated' if existing else 'Saved'} {ENV_VAR}={mask(key)} in {settings_path()}")
     if os.environ.get(ENV_VAR) and os.environ[ENV_VAR] != key:
         print(f"NOTE: a different {ENV_VAR} is set in your shell and takes precedence -- unset or align it.")
 
@@ -223,6 +301,62 @@ def cmd_set(args):
     print()
     print(f"NEXT: restart Claude Code once -- the keyed {SERVER_NAME} MCP server and the")
     print("downloaded skills/commands/agent all load at startup. Then run /listops:status.")
+
+
+def cmd_bootstrap(args):
+    """SessionStart entry point — finish setup from the token OAuth already stored.
+
+    Runs on every session start, so it stays quiet unless it did something. Its stdout is
+    injected into Claude's context, and it must never block a session: every failure path
+    returns normally instead of raising, and the worst case is the manual instruction the
+    user would have followed anyway.
+    """
+    installed = installed_pack_version()
+    token = oauth_token()
+
+    if not token:
+        # Silent when a key is configured some other way (shell env, /listops:connect,
+        # CI) — nothing is wrong, there is just no OAuth token to read.
+        if not installed and not resolve_key():
+            print(f"ListOps: the '{SERVER_NAME}' connector is not authorized yet. Connect it "
+                  "(one browser step), or run /listops:connect <your dra_ key>.")
+        return
+
+    shell_key = os.environ.get(ENV_VAR)
+    if shell_key and shell_key != token:
+        print(f"ListOps: a different {ENV_VAR} is set in your shell and takes precedence "
+              "over the connector's credential — unset or align it if the pipeline misbehaves.")
+
+    if installed:
+        # A version we can read back means the server accepted this token, so it is safe
+        # to refresh the stored copy (tokens can be rotated). None is ambiguous —
+        # unreachable or rejected — so leave the working setup alone.
+        latest = server_pack_version(token)
+        if not latest:
+            return
+        store_key(token, with_mcp_server=False)
+        if latest != installed:
+            try:
+                version, count = install_pack(token, quiet=True)
+            except SystemExit:
+                return  # keep the pack that works; the next session retries
+            print(f"ListOps: pack updated {installed} -> {version} ({count} files). "
+                  "Restart Claude Code if commands or the agent changed.")
+        return
+
+    # Never installed. Download FIRST: the request is what proves the token is good, and
+    # persisting a credential the API rejects would leave the pipeline holding a dead key.
+    try:
+        version, count = install_pack(token, quiet=True)
+    except SystemExit:
+        print(f"ListOps: the '{SERVER_NAME}' connector's credential was rejected by the API, "
+              "so the pack was not installed. Re-authorize the connector, or run "
+              "/listops:connect <your dra_ key>.")
+        return
+    store_key(token, with_mcp_server=False)
+    print(f"ListOps: installed {count} pack files (version {version}) using the "
+          f"'{SERVER_NAME}' connector credential — no separate key needed. "
+          "Restart Claude Code once to load the commands and the qa-judge agent.")
 
 
 def cmd_update(args):
@@ -283,12 +417,15 @@ def cmd_clear(args):
     else:
         print(f"{ENV_VAR} was not set in {path}; nothing to do.")
 
-    # Also remove the MCP server auth config written by cmd_set
+    # Also remove the MCP server auth config written by cmd_set, plus anything left by a
+    # name this connector shipped under previously.
     mcp = data.get("mcpServers")
-    if isinstance(mcp, dict) and SERVER_NAME in mcp:
-        del mcp[SERVER_NAME]
-        changed = True
-        print(f"Removed {SERVER_NAME} MCP server config from settings.json.")
+    if isinstance(mcp, dict):
+        for name in (SERVER_NAME, *LEGACY_SERVER_NAMES):
+            if name in mcp:
+                del mcp[name]
+                changed = True
+                print(f"Removed {name} MCP server config from settings.json.")
         if not mcp:
             data.pop("mcpServers", None)
 
@@ -330,7 +467,20 @@ def main():
     cl.add_argument("--purge", action="store_true", help="also delete the installed ListOps files")
     cl.set_defaults(func=cmd_clear)
 
+    b = sub.add_parser("bootstrap", help="SessionStart hook: install/refresh the pack using the connector's OAuth token")
+    b.set_defaults(func=cmd_bootstrap)
+
     args = p.parse_args()
+    if args.cmd == "bootstrap":
+        # A session must start even if setup cannot. install_pack() and friends exit(3) on
+        # network or auth trouble, which would surface as a failing hook; swallow all of it.
+        try:
+            cmd_bootstrap(args)
+        except SystemExit:
+            pass
+        except Exception:
+            pass
+        return
     args.func(args)
 
 

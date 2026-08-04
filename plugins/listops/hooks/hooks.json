@@ -1,0 +1,16 @@
+{
+  "description": "Install/refresh the ListOps pack from the evergreen connector's OAuth credential, so authorizing the connector is the only setup step",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/connect.py bootstrap",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
