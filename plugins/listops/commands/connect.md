@@ -32,7 +32,9 @@ Notes:
 - To disconnect: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/connect.py clear` (add `--purge` to
   delete the installed files too).
 
-**Claude Desktop:** this stores a key and downloads the pack under the Claude Code config
-directory, which Desktop does not read — so it will report success without giving you any
-`/listops:*` commands. On Desktop the connector's tools are what you have; the scripted
-pipeline is a Claude Code feature.
+**Claude Desktop:** worth trying if the connector's tools are not responding after you
+authorized. Be aware of the mechanism, though — this writes the key and the pack under the
+**Claude Code** config directory. If Desktop does not read that location, the script will
+report success while no `/listops:*` commands appear; that is not a failure to debug, it
+just means the pack landed somewhere Desktop is not looking. The connector's 24 tools are
+what Desktop relies on either way.
