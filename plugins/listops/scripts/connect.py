@@ -308,9 +308,15 @@ def installed_pack_version():
 
 def cmd_set(args):
     key = validate_key(args.key)
-    # Manual path: the user pasted a key rather than authorizing the connector, so also
-    # write the header-auth server entry — there may be no OAuth-backed connector at all.
-    existing = store_key(key, with_mcp_server=True)
+    # Manual path: the user pasted a key rather than authorizing the connector, so the
+    # header-auth server entry is normally what makes the tools reachable. Skip it when a
+    # connector is already authorized — a same-named entry beside it registers a SECOND
+    # server on the same URL and every tool shows up twice.
+    already_connected = oauth_token() is not None
+    if already_connected:
+        print(f"The '{SERVER_NAME}' connector is already authorized — storing the key for the "
+              "pipeline scripts only, leaving the connector as it is.")
+    existing = store_key(key, with_mcp_server=not already_connected)
     print(f"{'Updated' if existing else 'Saved'} {ENV_VAR}={mask(key)} in {settings_path()}")
     if os.environ.get(ENV_VAR) and os.environ[ENV_VAR] != key:
         print(f"NOTE: a different {ENV_VAR} is set in your shell and takes precedence -- unset or align it.")
