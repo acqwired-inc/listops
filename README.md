@@ -1,99 +1,37 @@
-# ListOps — Acqwired plugin for Claude Code & Claude Desktop
+# ListOps — Acqwired connector for Claude
 
-Investment-grade company list building. Turn a one-line ask —
-*"commercial landscaping companies in Texas, owner-operated, >$5M, no PE"* — into
-a screened, enriched, thesis-ranked list, powered by the
-**Acqwired Research API** (DRA — your API key starts with `dra_`).
+Company list building on the **Acqwired Research API**. Ask in plain language —
+*"commercial landscaping companies in the Sun Belt, owner-operated, no PE"* — and
+ListOps asks the few questions that decide the list (size, ownership, end market,
+geography), searches the Evergreen company corpus first, uses paid list-building
+sources (Google Maps, Exa, Ocean.io) only with your approval, and hands back a
+screened, QA'd list as a download link. Every run is kept as a session on the server.
 
-## Install — Claude Desktop
+ListOps is **one MCP connector**: `https://api.acqwired.com/v1/mcp`. This plugin just
+adds it to Claude Code. It works the same in Claude Desktop, the Claude mobile app,
+Codex, Cursor, Copilot and any other MCP client — add the URL there directly.
 
-1. **Customize → Plugins → Add marketplace** — search for `acqwired-inc/listops`, browse to **Personal**, click **+**.
-2. On the plugin page, find **listops** under **Connectors** and click it.
-3. A browser window opens at **platform.acqwired.com/connect** — paste your `dra_…` API key and click **Authorize**.
-4. Claude Desktop stores the token. Run `/listops:status` to confirm.
-
-> **Seeing "Contact an organization owner to install connectors"?**  
-> Your account is on a managed org plan. Ask your org admin to enable connector
-> installation in Settings → Organization → Permissions, or use a personal
-> Claude Desktop account.
-
-## Install — Claude Code (CLI)
+## Install — Claude Code
 
 ```bash
-# 1. add this marketplace
 /plugin marketplace add acqwired-inc/listops
-# 2. install the plugin
 /plugin install listops@acqwired
-# 3. authorize the connector:  /mcp  ->  listops  ->  Authenticate
-#    (a browser opens; paste your dra_ key once)
-# 4. restart Claude Code, then:
-/listops:status
+# then:  /mcp  ->  listops  ->  Authenticate   (a browser opens; paste your dra_ key once)
 ```
 
-**Authorizing the connector is the only setup step.** There is no second key to
-paste: the DRA authorization server is bring-your-own-key, so the token it issues
-*is* your `dra_` key. On the next session start the plugin reads that credential,
-installs the skill pack itself, and keeps it current from then on.
+Or skip the plugin: `claude mcp add --transport http listops https://api.acqwired.com/v1/mcp`.
 
-`/listops:build <your thesis>` runs the full pipeline.
+No browser (CI, a shared machine)? Add the server with a header instead:
+`claude mcp add --transport http listops https://api.acqwired.com/v1/mcp --header "Authorization: Bearer dra_..."`.
 
-<details>
-<summary>Headless — CI, a shared machine, or header auth</summary>
+## Install — Claude Desktop / mobile
 
-Where there is no OAuth credential to read, export `DRA_API_KEY=dra_...` in the
-environment. The hook falls back to it and installs and self-updates the pack the
-same way, so there is still nothing to run by hand.
-</details>
+Settings → Connectors → **Add custom connector** → name `Listops`, URL
+`https://api.acqwired.com/v1/mcp` → **Connect**, paste your `dra_…` key, **Authorize**.
 
-## How it works — thin bootstrap, key-gated skills
-
-This repository is intentionally **thin**. It contains only:
-
-- `.mcp.json` — wires the `listops` MCP server (`https://api.acqwired.com/v1/mcp`)
-- `hooks/hooks.json` — a `SessionStart` hook that installs and refreshes the pack
-- `scripts/connect.py` — what the hook runs; no slash commands of its own
-
-The actual skills, pipeline commands, and the QA agent are **not** in this repo.
-The hook **downloads the ListOps skill pack from the DRA API** — gated server-side by
-your (org-validated) key — and installs it under `~/.claude/`. The intelligence stays
-server-side; an invalid key gets nothing.
-
-```
-install plugin → authorize connector → restart → pack installs itself → full pipeline
-```
-
-The hook never asks for anything and never blocks a session: if the connector is not
-authorized yet, or the credential cannot be read, it prints the manual instruction and
-exits cleanly. It downloads only when the pack is missing or the server has a newer
-version, so ordinary session starts cost one small request.
-
-The connector and the plugin share the name `listops`, so it appears as
-`plugin:listops:listops` — the same shape the official Slack and Atlassian plugins use.
-
-## What you get after connect
-
-| Command | Stage |
-|---|---|
-| `/listops:build <thesis>` | Full pipeline: plan → list → screen → enrich (piloted + reviewed) → filter → thesis → QA → verified export |
-| `/listops:list` | Multi-source discovery (Google Maps + Exa) → dedupe → intake screen |
-| `/listops:enrich` · `/listops:filter` | Tiered enrich→filter waterfalls with a required pilot review gate |
-| `/listops:thesis` | `completeCompanyProfile` + thesis fit scoring |
-| `/listops:qa` | Independent QA (ownership re-verification, coverage probes) |
-| `/listops:export` | Gap-fill + deterministic basics verification + final deliverable |
-| `/listops:conflict-check` | Hand finalists to your internal conflict process |
-| `/listops:contacts` | Opt-in leadership contacts, cleared companies only |
-| `/listops:status` | Session funnel, gates, credits + update nudge |
-
-Plain language works too — *"find founder-owned HVAC companies near Tampa"* — the
-`list-building` skill triggers on intent.
+> **"Contact an organization owner to install connectors"?** Your account is on a managed
+> org plan — ask the org admin to allow connector installation, or use a personal account.
 
 ## Requirements
 
-- Claude Code (CLI) or Claude Desktop
-- An Acqwired API key (`dra_…`) from the [Acqwired dashboard](https://acqwired.com)
-- Python 3.8+ on PATH for the Claude Code path (the bootstrap script is stdlib-only)
-
-## Support
-
-Questions or a key request: contact Acqwired. Issues with the plugin bootstrap can
-be filed on this repo.
+- An Acqwired API key (`dra_…`) — contact Acqwired to request one

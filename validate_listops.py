@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """
-Local load-time validation for the ListOps plugin — mimics what Claude Code's
-plugin loader checks, plus script-reference resolution and Python compile.
-Stdlib only. Run from the dra-intelligence repo root.
+Local load-time validation for the ListOps plugin: the manifests Claude Code's plugin
+loader reads, and the one MCP server it carries. Stdlib only. Run from the repo root.
 """
-import ast
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -23,22 +20,6 @@ def load_json(p):
         return json.loads(p.read_text(encoding="utf-8")), None
     except Exception as e:
         return None, str(e)
-
-def frontmatter(p):
-    """Minimal --- delimited top-level key:value parser (no pyyaml dep)."""
-    text = p.read_text(encoding="utf-8")
-    if not text.startswith("---"):
-        return None
-    end = text.find("\n---", 3)
-    if end == -1:
-        return None
-    block = text[3:end].strip("\n")
-    fm = {}
-    for line in block.splitlines():
-        m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line)
-        if m:
-            fm[m.group(1)] = m.group(2).strip()
-    return fm
 
 print("== Manifests ==")
 mkt, e = load_json(ROOT / ".claude-plugin" / "marketplace.json")
@@ -64,58 +45,9 @@ if mcp:
     s = servers.get("listops", {})
     check(s.get("type") == "http" and bool(s.get("url")), "listops is http with url")
 
-hooks, e = load_json(PLUGIN / "hooks" / "hooks.json")
-check(hooks is not None, "hooks/hooks.json is valid JSON", e or "")
-if hooks:
-    session_start = (hooks.get("hooks") or {}).get("SessionStart")
-    check(isinstance(session_start, list) and len(session_start) > 0,
-          "hooks.json registers a SessionStart hook")
-    commands = [h.get("command", "")
-                for group in (session_start or []) for h in (group.get("hooks") or [])]
-    # The whole one-step setup rests on this hook firing; a typo here degrades silently
-    # into "nothing installs, ever" — the plugin ships no commands to fall back on.
-    check(any("connect.py bootstrap" in c for c in commands),
-          "SessionStart invokes connect.py bootstrap")
-
-src = (PLUGIN / "scripts" / "connect.py").read_text(encoding="utf-8")
-check('"bootstrap"' in src, "connect.py registers the bootstrap subcommand")
-check("mcpOAuth" in src, "connect.py reads the connector's stored OAuth credential")
-
-print("\n== Frontmatter (commands / agents / skills) ==")
-for cmd in sorted((PLUGIN / "commands").glob("*.md")):
-    fm = frontmatter(cmd)
-    check(fm is not None and bool(fm.get("description")), f"command {cmd.name}: description", "missing/empty frontmatter")
-for ag in sorted((PLUGIN / "agents").glob("*.md")):
-    fm = frontmatter(ag)
-    check(fm is not None and bool(fm.get("name")) and bool(fm.get("description")), f"agent {ag.name}: name+description")
-for sk in sorted((PLUGIN / "skills").glob("*/SKILL.md")):
-    fm = frontmatter(sk)
-    label = sk.parent.name
-    check(fm is not None and bool(fm.get("description")), f"skill {label}: description")
-
-print("\n== ${CLAUDE_PLUGIN_ROOT} script references resolve ==")
-ref_re = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}/([A-Za-z0-9_./-]+)")
-missing = 0
-for md in [*sorted(PLUGIN.rglob("*.md")), PLUGIN / "hooks" / "hooks.json"]:
-    if not md.exists():
-        continue
-    for rel in ref_re.findall(md.read_text(encoding="utf-8")):
-        rel = rel.rstrip(".,);:`'\"")
-        if "*" in rel or rel.endswith("/"):
-            continue
-        target = PLUGIN / rel
-        if not target.exists():
-            missing += 1
-            check(False, f"ref in {md.name} -> {rel}", "target missing")
-check(missing == 0, f"all ${{CLAUDE_PLUGIN_ROOT}} file references resolve ({missing} missing)")
-
-print("\n== Python scripts compile ==")
-for py in sorted(PLUGIN.rglob("*.py")):
-    try:
-        ast.parse(py.read_text(encoding="utf-8"))
-        check(True, f"compiles: {py.relative_to(PLUGIN)}")
-    except SyntaxError as e:
-        check(False, f"compiles: {py.relative_to(PLUGIN)}", str(e))
+check(not (PLUGIN / "hooks").exists(), "plugin ships no hooks — it is the connector config only")
+check(not (PLUGIN / "commands").exists(), "plugin ships no slash commands")
+check(not (PLUGIN / "scripts").exists(), "plugin ships no scripts")
 
 print(f"\n==== {len(ok)} passed, {len(fail)} failed ====")
 if fail:
