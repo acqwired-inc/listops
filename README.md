@@ -1,37 +1,36 @@
-# ListOps — Acqwired connector for Claude
+# This plugin is retired: use the Evergreen connector
 
-Company list building on the **Acqwired Research API**. Ask in plain language —
-*"commercial landscaping companies in the Sun Belt, owner-operated, no PE"* — and
-ListOps asks the few questions that decide the list (size, ownership, end market,
-geography), searches the Evergreen company corpus first, uses paid list-building
-sources (Google Maps, Exa, Ocean.io) only with your approval, and hands back a
-screened, QA'd list as a download link. Every run is kept as a session on the server.
+ListOps is now **Evergreen**, and it needs no plugin. It is a single MCP connector
+that works the same in Claude Code, Claude Desktop, the Claude mobile app, Codex,
+Cursor, Copilot and any other MCP client:
 
-ListOps is **one MCP connector**: `https://api.acqwired.com/v1/mcp`. This plugin just
-adds it to Claude Code. It works the same in Claude Desktop, the Claude mobile app,
-Codex, Cursor, Copilot and any other MCP client — add the URL there directly.
-
-## Install — Claude Code
-
-```bash
-/plugin marketplace add acqwired-inc/listops
-/plugin install listops@acqwired
-# then:  /mcp  ->  listops  ->  Authenticate   (a browser opens; paste your dra_ key once)
+```
+https://api.acqwired.com/v1/mcp
 ```
 
-Or skip the plugin: `claude mcp add --transport http listops https://api.acqwired.com/v1/mcp`.
+Setup for every client: **https://platform.acqwired.com/evergreen**
 
-No browser (CI, a shared machine)? Add the server with a header instead:
-`claude mcp add --transport http listops https://api.acqwired.com/v1/mcp --header "Authorization: Bearer dra_..."`.
+## Claude Code
 
-## Install — Claude Desktop / mobile
+```bash
+claude mcp add --transport http evergreen https://api.acqwired.com/v1/mcp
+# then, inside Claude Code:  /mcp -> evergreen -> Authenticate
+# (a browser opens; paste your Evergreen API key once)
+```
 
-Settings → Connectors → **Add custom connector** → name `Listops`, URL
-`https://api.acqwired.com/v1/mcp` → **Connect**, paste your `dra_…` key, **Authorize**.
+If you installed this plugin before, remove it:
 
-> **"Contact an organization owner to install connectors"?** Your account is on a managed
-> org plan — ask the org admin to allow connector installation, or use a personal account.
+```bash
+/plugin uninstall listops@acqwired
+/plugin marketplace remove acqwired
+```
 
-## Requirements
+## Claude Desktop, claude.ai and the mobile app
 
-- An Acqwired API key (`dra_…`) — contact Acqwired to request one
+Settings → Connectors → Add custom connector. Name it **Evergreen** and paste the URL
+above, then Connect and paste your Evergreen API key when the browser opens.
+
+API keys issued before the rename start with `dra_` and keep working; new keys start
+with `evergreen_`. Request a key at https://www.acqwired.com/contact.
+
+This repository is archived and no longer updated.
